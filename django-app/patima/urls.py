@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/feedback/', include('feedback.urls')),
     path('api/prediction/', include('prediction.urls')),
     path('api/messages/', include('admin_messages.urls')),
+    path('api/settings/', include('settings.urls')),
     path('', include('common.urls'))
 ]

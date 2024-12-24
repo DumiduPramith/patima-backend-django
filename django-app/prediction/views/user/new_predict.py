@@ -4,14 +4,14 @@ import logging
 from django.http.response import JsonResponse
 from rest_framework.views import APIView
 
-from patima.permission.is_archeo_general import IsArcheoLogistOrGeneralPub
+from patima.permission.is_archeo_general_admin import IsArcheoGeneralAdmin
 from prediction.utils.prediction_handler import PredictionHandler
 
 logger = logging.getLogger(__name__)
 
 
 class Predict(APIView):
-    permission_classes = [IsArcheoLogistOrGeneralPub]
+    permission_classes = [IsArcheoGeneralAdmin]
 
     def post(self, request):
         # Code to predict

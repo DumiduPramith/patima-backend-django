@@ -5,8 +5,6 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from django.apps import apps
-from fontTools.ttx import process
-from torch import dtype
 
 from patima.utils.database_handler import DatabaseHandler
 from prediction.utils.raw_image_handler import RawImageHandler
@@ -21,7 +19,8 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
     def __init__(self,usr_obj):
         RawImageHandler.__init__(self,user_obj=usr_obj)
         PredictedImageHandler.__init__(self,user_obj=usr_obj)
-        self.segmentation_model = apps.get_app_config('prediction').segmentation_model
+        self.__segmentation_model_yolo = apps.get_app_config('prediction').segmentation_model_yolo
+        self.__segmentation_model_unet = apps.get_app_config('prediction').segmentation_model_unet
         self.new_generator = apps.get_app_config('prediction').new_generator
         self.__usr_obj = usr_obj
 
@@ -127,7 +126,7 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
             data[0]['predicted_image_path'] = '/static/predicted_images/error.png'
         return data
 
-    def segment_image(self, input_image):
+    def __segment_image_yolo(self, input_image):
         # Convert TensorFlow tensor to NumPy array
         np_arr = tf.cast(input_image, tf.uint8).numpy()
 
@@ -139,7 +138,7 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
             return False
 
         H, W, _ = img.shape
-        results = self.segmentation_model.predict(source=img, save=False, conf=0.25, verbose=False)
+        results = self.__segmentation_model_yolo.predict(source=img, save=False, conf=0.25, verbose=False)
 
         for result in results:
             for mask in result.masks.data:
@@ -152,6 +151,29 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
 
                 # Keep the segmented image in the original coordinates
                 return segmented_image
+
+    def __segment_image_unet(self, input_image):
+        grayscale_image = tf.image.rgb_to_grayscale(input_image)
+        img_array = tf.keras.preprocessing.image.img_to_array(grayscale_image) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        predicted_mask = self.__segmentation_model_unet.predict(img_array)[0].squeeze()
+
+        binarymask = (predicted_mask > apps.get_app_config('prediction').segmentation_config_unet['threshold']).astype(np.uint8)
+
+        if isinstance(input_image, tf.Tensor):
+            input_image = input_image.numpy()
+
+        masked_image = input_image.copy()
+        masked_image[binarymask == 0] = 0
+
+        if os.getenv('DJANGO_ENV') == 'dev':
+            plt.subplot(1, 1, 1)
+            plt.imshow(masked_image)
+            plt.title('Masked Image Unet')
+            plt.show()
+
+        return masked_image
+
 
     @staticmethod
     def __post_processing(generated_image, segmented_image):
@@ -195,13 +217,15 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
 
         # Resize the image
         resized_image = self._resize(input_tensor)
-
-        segmented_image = self.segment_image(resized_image)
+        if apps.get_app_config('prediction').chosen_segmentation_model == 'yolo':
+            segmented_image = self.__segment_image_yolo(resized_image)
+            segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2RGB)
+        else:
+            segmented_image = self.__segment_image_unet(resized_image)
 
         if segmented_image is False:
             return False
 
-        segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2RGB)
 
         segmented_image = tf.cast(segmented_image, tf.float32)
 
@@ -210,10 +234,7 @@ class PredictionHandler(RawImageHandler, PredictedImageHandler):
         generated_image = self.new_generator(segmented_image, training=True)
         generated_image = generated_image[0] * 0.5 + 0.5
 
-        # processed_image = self.__post_processing(generated_image, segmented_image)
 
-        # processed_image = tf.squeeze(processed_image, axis=0)
-        #
         if os.getenv('DJANGO_ENV') == 'dev':
             image_data = tf.image.decode_image(image_bytes, channels=3)
             image_data = tf.cast(image_data, tf.uint8)
