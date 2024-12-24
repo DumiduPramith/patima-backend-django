@@ -21,10 +21,14 @@ sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli container
 sudo groupadd -f docker || { echo "Failed to create Docker group"; exit 1; }
 sudo usermod -aG docker $USER || { echo "Failed to add user to Docker group"; exit 1; }
 
-# Install Git LFS
-sudo apt-get install -y git-lfs || { echo "Failed to install Git LFS"; exit 1; }
+## Install Git LFS
+#sudo apt-get install -y git-lfs || { echo "Failed to install Git LFS"; exit 1; }
+#
+## Display a message for the user
+#echo "Docker and Git LFS have been installed successfully. Please log out and log back in to use Docker without sudo."
+#git lfs install
+#git lfs pull
 
-# Display a message for the user
-echo "Docker and Git LFS have been installed successfully. Please log out and log back in to use Docker without sudo."
-git lfs install
-git lfs pull
+# Download models
+chmod +x download_models.sh
+./download_models.sh || { echo "Failed to download models"; exit 1; }
