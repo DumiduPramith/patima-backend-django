@@ -65,17 +65,31 @@ The backend for the Patima Android app is built using Django and Django REST Fra
 
 ### Environment Variables
 
-Create a `.env` file in the root directory of the project and add the following environment variables:
+Create a `.env.prod` file in the root directory of the project and add the following environment variables:
 
 ```env
-SECRET_KEY=your_secret_key
-DEBUG=True
-DATABASE_URL=mysql://your_mysql_user:your_mysql_password@localhost/patima_db
-EMAIL_HOST=smtp.your-email-provider.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=your_email@example.com
-EMAIL_HOST_PASSWORD=your_email_password
-EMAIL_USE_TLS=True
+# Example .env file for Django project
+
+# Email configuration
+EMAIL_HOST_PASSWORD="your-email-host-password"
+EMAIL_HOST_USER="your-email@example.com"
+
+# Logging configuration
+DJANGO_LOG_LEVEL="DEBUG"
+DJANGO_LOG_FILE="django.log"
+
+# Database configuration
+DB_HOST="database-host"
+
+# Django settings
+SECRET_KEY="your-secret-key"
+ALLOWED_HOSTS="your-allowed-hosts"
+
+# File paths
+RAW_IMAGE_SAVING_PATH="static/raw_images/"
+PREDICTED_IMAGE_SAVING_PATH="static/predicted_images/"
+PROFILE_PICTURE_SAVING_PATH="static/profile_pictures/"
+
 ```
 
 ## Contributing

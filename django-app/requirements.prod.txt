@@ -5,7 +5,7 @@ djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 mysqlclient==2.2.4
 python-dotenv==1.0.1
-PyYAML==5.4
+
 gunicorn
 pillow
 --extra-index-url https://download.pytorch.org/whl/cpu

@@ -27,6 +27,7 @@ services:
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_USER_PASSWORD}
+      DJANGO_ENV : prod
     command: sh -c "gunicorn patima.wsgi --bind 0.0.0.0:8000"
     restart: on-failure
     volumes:
